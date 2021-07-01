@@ -1,0 +1,14 @@
+#!/bin/bash
+set -me
+
+SCRIPT_NAME=`basename "$0"`
+
+echo "$SCRIPT_NAME: Starting Varnish in the foreground..."
+
+varnishd -F \
+  -a :{% if flightdeck_varnish.hostPort is defined %}{{ flightdeck_varnish.hostPort }}{% else %}{{ lookup('env', 'VARNISH_HTTP_PORT') | default('6081', true) }}{% endif %} \
+  -T :{% if flightdeck_varnish.controlPort is defined %}{{ flightdeck_varnish.controlPort }}{% else %}{{ lookup('env', 'VARNISH_CONTROL_PORT') | default('6082', true) }}{% endif %} \
+  -f /etc/varnish/default.vcl \
+  -S {% if flightdeck_varnish.secretFile is defined %}{{ flightdeck_varnish.secretFile }}{% else %}/etc/varnish/secret{% endif %} \
+  -s malloc,{% if flightdeck_varnish.memSize is defined %}{{ flightdeck_varnish.memSize }}{% else %}{{ lookup('env', 'VARNISH_MEMORY_SIZE') | default('256m', true)}}{% endif %} \
+  -s secondary=file,{{ flightdeck_varnish.storageFile | default('/var/lib/varnish/storage.bin') }},{{ flightdeck_varnish.storageSize | default('1024m') }}

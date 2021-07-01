@@ -1,0 +1,45 @@
+---
+- hosts: varnish
+  roles:
+    - ten7.flightdeck_base
+  tasks:
+    - name: Install Varnish
+      apk:
+        name: "{{ item }}"
+        state: present
+        update_cache: yes
+      loop:
+        - "curl"
+        - "varnish"
+      notify:
+        - clear apk cache
+    - name: Ensure key directories are owned by varnish
+      file:
+        path: "{{ item }}"
+        state: directory
+        owner: "varnish"
+        group: "varnish"
+        mode: "u=rwx,g=rwx,o=r"
+        recurse: yes
+      loop:
+        - "/etc/varnish"
+    # Deploy the run command at build time using defaults in the template.
+    # This way, the container can still run via FLIGHTDECK_SKIP_ENTRYPOINT.
+    - name: Deploy key scripts.
+      template:
+        src: "{{ item.src }}"
+        dest: "{{ item.dest }}"
+        owner: "varnish"
+        group: "varnish"
+        mode: "u=rwx,g=rwx,o="
+      loop:
+        - src: "templates/varnish-foreground.sh.j2"
+          dest: "/var/lib/varnish/varnish-foreground.sh"
+  handlers:
+    - name: clear apk cache
+      file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - "/tmp/*"
+        - "/var/cache/apk/*"

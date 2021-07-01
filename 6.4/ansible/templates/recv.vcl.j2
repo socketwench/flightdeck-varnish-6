@@ -1,0 +1,125 @@
+# Respond to incoming requests.
+sub vcl_recv {
+
+  # Use a director in the case we have multiple backends.
+  set req.backend_hint = bar.backend();
+
+  if (req.method == "PURGE") {
+    if (!client.ip ~ purge) {
+      return(synth(405,"Purge not allowed."));
+    }
+
+    return (purge);
+  }
+
+  if (req.method == "BAN") {
+    if (!client.ip ~ purge) {
+      return(synth(405, "Ban not allowed."));
+    }
+
+    # Some examples also set an internal x-host and x-url in the req,
+    # then key off of it here for the ban.
+    ban("req.http.host ~ " + req.http.x-ban-host +
+          " && req.url ~ " + req.http.x-ban-url);
+
+    # Throw a synthetic page so the
+    # request won't go to the backend.
+    return(synth(200, "Ban added"));
+  }
+
+  // Add a synth response for external healthchecks.
+{% if flightdeck_varnish.statusCheck | default(flightdeck_varnish_defaults.statusCheck) %}
+  if (req.url ~ "{{ flightdeck_varnish.statusCheckUrl | default(flightdeck_varnish_defaults.statusCheckUrl) }}") {
+    return (synth(200, "{{ flightdeck_varnish.statusCheckMessage | default(flightdeck_varnish_defaults.statusCheckMessage) }}"));
+  }
+{% endif %}
+
+  # Pass the X-Forwarded-For IP, if any. Otherwise use the upstream proxy IP.
+  if (client.ip ~ upstream_proxy && req.http.X-Forwarded-For) {
+    set req.http.X-Forwarded-For = req.http.X-Forwarded-For;
+  } else {
+    set req.http.X-Forwarded-For = regsub(client.ip, ":.*", "");
+  }
+
+  // Pass AJAX requests.
+  if (req.http.X-Requested-With == "XMLHttpRequest") {
+    return (pass);
+  }
+
+  // Pass POST requests.
+  if (req.http.Authorization || req.method == "POST") {
+    return (pass);
+  }
+
+  // Pass requests with an Authorization header set.
+  if (req.http.Authorization) {
+    return(pass);
+  }
+
+  # Protecting against the HTTPOXY CGI vulnerability.
+  unset req.http.proxy;
+
+  # Set the grace custom header to "none", it may be overridden in vcl_hit().
+  set req.http.X-Varnish-Grace = "none";
+
+  # Deal with GET and HEAD  requests only, everything else gets through
+  if (req.method != "GET" &&
+      req.method != "HEAD") {
+    return (pass);
+  }
+
+  # Do not cache these paths.
+  if ({% for _pattern in flightdeck_varnish.skipCache | default(flightdeck_varnish_defaults.skipCache) %}
+      req.url ~ "{{ _pattern }}" {{ "||" if not loop.last }}
+     {% endfor %}) {
+      return (pass);
+  }
+
+  # Removing cookies for static content so Varnish caches these files.
+  if (req.url ~ "(?i)\.(pdf|asc|dat|txt|doc|xls|ppt|tgz|csv|png|gif|jpeg|jpg|ico|swf|css|js|svg)(\?.*)?$") {
+      unset req.http.Cookie;
+  }
+
+  # Remove all cookies that Drupal doesn't need to know about. We explicitly
+  # list the ones that Drupal does need, the SESS and NO_CACHE. If, after
+  # running this code we find that either of these two cookies remains, we
+  # will pass as the page cannot be cached.
+  if (req.http.Cookie) {
+    # 1. Append a semi-colon to the front of the cookie string.
+    set req.http.Cookie = ";" + req.http.Cookie;
+
+    # 2. Remove all spaces that appear after semi-colons.
+    set req.http.Cookie = regsuball(req.http.Cookie, "; +", ";");
+
+    # 3. Match the cookies we want to keep, adding the space we removed
+    #    previously back. (\1) is first matching group in the regsuball.
+{% for _pattern in flightdeck_varnish.keepCookies | default(flightdeck_varnish_defaults.keepCookies) %}
+    set req.http.Cookie = regsuball(req.http.Cookie, ";({{ _pattern }})=", "; \1=");
+{% endfor %}
+
+    # 4. Remove all other cookies, identifying them by the fact that they have
+    #    no space after the preceding semi-colon.
+    set req.http.Cookie = regsuball(req.http.Cookie, ";[^ ][^;]*", "");
+
+    # 5. Remove all spaces and semi-colons from the beginning and end of the
+    #    cookie string.
+    set req.http.Cookie = regsuball(req.http.Cookie, "^[; ]+|[; ]+$", "");
+
+    if (req.http.Cookie == "") {
+      # If there are no remaining cookies, remove the cookie header. If there
+      # aren't any cookie headers, Varnish's default behavior will be to cache
+      # the page.
+      unset req.http.Cookie;
+    }
+    else {
+      # If there is any cookies left (a session or NO_CACHE cookie), do not
+      # cache the page. Pass it on directly.
+      return (pass);
+    }
+  }
+
+  // Normalize the query parameters so we aren't double caching.
+  set req.url = std.querysort(req.url);
+
+  return (hash);
+}
