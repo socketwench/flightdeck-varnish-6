@@ -14,11 +14,25 @@ There are several tags available for this container, each with different Solr an
 | Varnish version | Tags |
 | --------------- | ---- |
 | 6.4 | 6, latest |
-| 6.1 | 6.1 |
 
 ## Configuration
 
-This container does not use environment variables for configuration. Instead, the `flight-deck-varnish.yml` file is used to handle all configuration.
+Instead of a large number of environment variables, this container relies on a file to perform all runtime configuration, `flightdeck-varnish.yml`. Inside the file, create following:
+
+```yaml
+---
+flightdeck_varnish: {}
+```
+
+All configuration is done as items under the `flightdeck_varnish` variable. See the following sections for details as to particular configurations.
+
+You can provide this file in one of three ways to the container:
+
+* Mount the configuration file at path `/config/web/flightdeck-varnish.yml` inside the container using a bind mount, configmap, or secret.
+* Mount the config file anywhere in the container, and set the `FLIGHTDECK_CONFIG_FILE` environment variable to the path of the file.
+* Encode the contents of `flightdeck-varnish.yml` as base64 and assign the result to the `FLIGHTDECK_CONFIG` environment variable.
+
+### Basic Settings
 
 ```yaml
 ---
@@ -39,7 +53,7 @@ Where:
 * **storageFile** is the full path in the container to the file to use for longer term varnish caching. Optional, defaults to `/var/lib/varnish/storage.bin`.
 * **storageSize** is the size of the storage file. Optional, defaults to `1024m`.
 
-## Describing backends
+### Describing backends
 
 Varnish acts as a caching reverse HTTP proxy. You can specify one or more backends by defining the `flightdeck_varnish.backends` list:
 
@@ -60,7 +74,7 @@ For each item:
 
 ### Using separate files for credentials
 
-Sometimes, you may wish to keep certain credentials in separate files from the rest of the configuration. One such case is if you want to keep `flight-deck-varnish.yml` in a Kubernetes configmap, but keep the database passwords in secrets instead.
+Sometimes, you may wish to keep certain credentials in separate files from the rest of the configuration. One such case is if you want to keep `flightdeck-varnish.yml` in a Kubernetes configmap, but keep the database passwords in secrets instead.
 
 ```yaml
 ---
@@ -96,7 +110,7 @@ Where:
 
 ### Probing health
 
-Varnish can routinuely check the health of the backend through a "probe".
+Varnish can routinely check the health of the backend through a "probe".
 
 ```yaml
 ---
@@ -220,9 +234,9 @@ Use the [`ten7.flightdeck_cluster`](https://galaxy.ansible.com/ten7/flightdeck_c
 flightdeck_cluster:
   namespace: "example-com"
   configMaps:
-    - name: "flight-deck-varnish"
+    - name: "flightdeck-varnish"
       files:
-        - name: "flight-deck-varnish.yml"
+        - name: "flightdeck-varnish.yml"
           content: |
           flightdeck_varnish:
             secret: "secretish"
@@ -238,32 +252,31 @@ flightdeck_cluster:
   web:
     replicas: 1
     configMaps:
-      - name: "flight-deck-varnish"
+      - name: "flightdeck-varnish"
         path: "/config/varnish"
 ```
 
 ## Using with Docker Compose
 
-Create the `flight-deck-varnish.yml` file relative to your `docker-compose.yml`. Define the `varnish` service mounting the file as a volume:
+Create the `flightdeck-varnish.yml` file relative to your `docker-compose.yml`. Define the `varnish` service mounting the file as a volume:
 
 ```yaml
 version: '3'
 services:
   varnish:
-    image: ten7/flight-deck-varnish:6
+    image: ten7/flightdeck-varnish-6.4
     ports:
       - 6081:6081
       - 6082:6082
     volumes:
-      - ./flight-deck-varnish.yml:/config/varnish/flight-deck-varnish.yml
+      - ./flightdeck-varnish.yml:/config/varnish/flightdeck-varnish.yml
 ```
 
 ## Part of Flight Deck
 
-This container is part of the [Flight Deck library](https://github.com/ten7/flight-deck) of containers for Drupal local development and production workloads on Docker, Swarm, and Kubernetes.
+This container is part of the [Flight Deck](https://flightdeck.ten7.com) library of containers for Drupal local development and production workloads on Docker, Swarm, and Kubernetes.
 
 Flight Deck is used and supported by [TEN7](https://ten7.com/).
-
 
 ## Debugging
 
