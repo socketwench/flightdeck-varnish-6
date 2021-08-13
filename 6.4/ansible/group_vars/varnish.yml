@@ -9,8 +9,14 @@ flightdeck_users:
     group: "varnish"
     home: "/var/lib/varnish"
 
-flightdeck_root_prompt: '\u@flight-deck-varnish:\w# '
-flightdeck_user_prompt: '\u@flight-deck-varnish:\w$ '
+flightdeck_root_prompt: '\u@flightdeck-varnish-6.4:\w# '
+flightdeck_user_prompt: '\u@flightdeck-varnish-6.4:\w$ '
+
+flightdeck_motd_links:
+  - name: 'Code & docs'
+    url: 'https://github.com/ten7/flightdeck-varnish-6.4'
+  - name: ' Learn more'
+    url: 'https://flightdeck.ten7.com/'
 
 flightdeck_run_commands: |
   if [ -n "${FLIGHTDECK_CONFIG}" ]; then
@@ -81,7 +87,7 @@ flightdeck_varnish_defaults:
     - "wp-settings-[0-9]+"
     - "wp-settings-time-[0-9]+"
   statusCheck: yes
-  statusCheckUrl: "^/__flight\\-deck\\-status$"
+  statusCheckUrl: "^/__flightdeck\\-status$"
   statusCheckMessage: "Check successful"
   secret: "secretish"
   hostPort: "6081"
