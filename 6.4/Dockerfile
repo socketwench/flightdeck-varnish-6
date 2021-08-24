@@ -27,4 +27,4 @@ USER varnish
 
 # Set the entrypoint and default command.
 ENTRYPOINT ["docker-entrypoint.sh"]
-CMD ["/var/lib/varnish/varnish-foreground.sh"]
+CMD ["docker-cmd.sh", "/var/lib/varnish/varnish-foreground.sh"]
