@@ -69,11 +69,12 @@ sub vcl_recv {
   }
 
   # Do not cache these paths.
-  if ({% for _pattern in flightdeck_varnish.skipCache | default(flightdeck_varnish_defaults.skipCache) %}
-      req.url ~ "{{ _pattern }}" {{ "||" if not loop.last }}
-     {% endfor %}) {
+  {% for _pattern in flightdeck_varnish.skipCache | default(flightdeck_varnish_defaults.skipCache) %}
+  if (req.url ~ "{{ _pattern }}") {
+      set req.http.X-Cacheable = "NO:skipped-in-conf";
       return (pass);
   }
+  {% endfor %}
 
   # Removing cookies for static content so Varnish caches these files.
   if (req.url ~ "(?i)\.(pdf|asc|dat|txt|doc|xls|ppt|tgz|csv|png|gif|jpeg|jpg|ico|swf|css|js|svg)(\?.*)?$") {

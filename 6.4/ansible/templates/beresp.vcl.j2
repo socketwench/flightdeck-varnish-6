@@ -23,6 +23,30 @@ sub vcl_backend_response {
       set beresp.ttl = {{ flightdeck_varnish.staticTtl | default(flightdeck_varnish_defaults.staticTtl) }};
     }
 
+    # Do not cache these paths.
+    {% for _pattern in flightdeck_varnish.skipCache | default(flightdeck_varnish_defaults.skipCache) %}
+    if (bereq.url ~ "{{ _pattern }}") {
+      set beresp.http.X-Cacheable = "NO:skipped-in-conf";
+      set beresp.uncacheable = true;
+      return (deliver);
+    }
+    {% endfor %}
+
+    if (beresp.http.X-Drupal-Dynamic-Cache ~ "UNCACHEABLE"){
+      set beresp.http.X-Cacheable = "NO:Drupal-Dynamic-Cache=UNCACHEABLE";
+      set beresp.uncacheable = true;
+      return (deliver);
+    }
+
+    # Skip any responses which are labeled as no-cache.
+    if (beresp.http.Cache-Control ~ "no-cache") {
+      set beresp.http.X-Cacheable = "NO:Cache-Control=no-cache";
+      set beresp.uncacheable = true;
+      return (deliver);
+    }
+
     # Allow items to remain in cache up to N hours past their cache expiration.
     set beresp.grace = {{ flightdeck_varnish.grace | default(flightdeck_varnish_defaults.grace) }};
+
+    set beresp.http.X-Cacheable = "YES";
 }

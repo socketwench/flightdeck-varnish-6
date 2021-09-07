@@ -24,4 +24,6 @@ sub vcl_deliver {
 
   // Pass the TTL header.
   set resp.http.X-Varnish-Ttl = req.http.X-Varnish-Ttl;
+
+  set resp.http.X-Varnish-Ttl = req.http.X-Cacheable;
 }
