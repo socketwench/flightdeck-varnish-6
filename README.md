@@ -150,26 +150,28 @@ You can configure which items always bypass the cache in the configuration file:
 ---
 flightdeck_varnish:
   skipCache:
-    - "^/status\\.php$"
-    - "^/update\\.php"
-    - "^/install\\.php"
-    - "^/wp-login\\.php$"
-    - "^/apc\\.php$"
-    - "^/admin"
-    - "^/admin/.*$"
-    - "^/user"
-    - "^/user/.*$"
-    - "^/users/.*$"
-    - "^/info/.*$"
-    - "^/flag/.*$"
-    - "^/wp-admin/.*$"
-    - "^.*/ahah/.*$"
-    - "^/system/files/.*$"
+    - "/status\\.php"
+    - "/update\\.php"
+    - "/install\\.php"
+    - "/wp-login\\.php"
+    - "/apc\\.php"
+    - "/admin"
+    - "/admin/.*"
+    - "/user"
+    - "/user/.*"
+    - "/users/.*"
+    - "/info/.*"
+    - "/flag/.*"
+    - "/wp-admin/.*"
+    - ".*/ahah/.*"
+    - "/system/files/.*"
 ```
 
 Where:
 
 * **skipCache** is a list of regular expressions which match URL paths to skip caching. Note, YAML needs backslashes to be escaped with another backslash. Optional, the container will skip best practice Drupal and Wordpress paths.
+
+**Note**: Avoid use of regex line beginning (`^`) and line ending (`$`) patterns as they do not match as expected.
 
 ### Excluding cookies from caching
 
