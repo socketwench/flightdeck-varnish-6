@@ -11,9 +11,11 @@ Features:
 
 There are several tags available for this container, each with different Solr and module support:
 
-| Varnish version | Tags |
-| --------------- | ---- |
-| 6.4 | 6, latest |
+| Tags           | Varnish version |
+|----------------|-----------------|
+| stable, latest | 6.6             |
+| edge, develop  | 6.6             |
+| x.y.z          | 6.6             |
 
 ## Configuration
 
@@ -266,7 +268,7 @@ Create the `flightdeck-varnish.yml` file relative to your `docker-compose.yml`. 
 version: '3'
 services:
   varnish:
-    image: ten7/flightdeck-varnish-6.4
+    image: ten7/flightdeck-varnish-6
     ports:
       - 6081:6081
       - 6082:6082
