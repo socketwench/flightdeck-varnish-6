@@ -1,34 +1,6 @@
 ---
 - hosts: varnish
   tasks:
-    - name: Configure *.vcl
-      template:
-        src: "{{ item.src }}"
-        dest: "{{ item.dest }}"
-        owner: "varnish"
-        group: "varnish"
-        mode: "u=r,g=r,o="
-      loop:
-        - src: "templates/acl.vcl.j2"
-          dest: "/etc/varnish/acl.vcl"
-        - src: "templates/backend.vcl.j2"
-          dest: "/etc/varnish/backend.vcl"
-        - src: "templates/beerr.vcl.j2"
-          dest: "/etc/varnish/beerr.vcl"
-        - src: "templates/beresp.vcl.j2"
-          dest: "/etc/varnish/beresp.vcl"
-        - src: "templates/default.vcl.j2"
-          dest: "/etc/varnish/default.vcl"
-        - src: "templates/deliver.vcl.j2"
-          dest: "/etc/varnish/deliver.vcl"
-        - src: "templates/hash.vcl.j2"
-          dest: "/etc/varnish/hash.vcl"
-        - src: "templates/hit.vcl.j2"
-          dest: "/etc/varnish/hit.vcl"
-        - src: "templates/pipe.vcl.j2"
-          dest: "/etc/varnish/pipe.vcl"
-        - src: "templates/recv.vcl.j2"
-          dest: "/etc/varnish/recv.vcl"
     - name: Deploy key scripts.
       template:
         src: "{{ item.src }}"
@@ -50,3 +22,13 @@
         _secret: "{{ flightdeck_varnish.secret | default('secret') }}"
       when:
         - flightdeck_varnish.secretFile is not defined
+    - name: Provision the VCL
+      copy:
+        content: "{{ flightdeck_varnish.vcl | default(flightdeck_varnish_default_vcl) }}"
+        dest: "/etc/varnish/default.vcl"
+        owner: "varnish"
+        group: "varnish"
+        mode: "u=r,g=r,o="
+      when:
+        - flightdeck_varnish.vclPath is not defined
+
