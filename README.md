@@ -43,6 +43,7 @@ flightdeck_varnish:
   hostPort: "6081"
   controlPort: "6082"
   memSize: "256m"
+  storageEnabled: false
   storageFile: "/var/lib/varnish/storage.bin"
   storageSize: "1024m"
 ```
@@ -52,12 +53,46 @@ Where:
 * **hostPort** is the port on which the Varnish proxy is available. Optional, defaults to `6081`.
 * **controlPort** is the port for the Varnish control terminal. Optional, defaults to `6082`.
 * **memSize** is the size of memory to dedicate to caching. Optional, defaults to `256m`.
+* **storageEnabled** is if secondary storage to disk is enabled. Optional. Defaults to false.
 * **storageFile** is the full path in the container to the file to use for longer term varnish caching. Optional, defaults to `/var/lib/varnish/storage.bin`.
 * **storageSize** is the size of the storage file. Optional, defaults to `1024m`.
 
-### Specifying VCL
+## Configuring Varnish
 
-You can specify VCL inline by using the `vcl` key:
+This container provides a three different ways to configure Varnish:
+1. Simple config via YAML.
+2. Providing inline VCL.
+3. Providing an external VCL.
+
+### Simple config via YAML
+
+If you are using this container to provide HTTP caching for a Drupal site, simple config may be sufficient for your needs. This container provides a VCL based on [Varnish's own example](https://www.varnish-software.com/developers/tutorials/configuring-varnish-drupal/#the-drupal-vcl-file) for Drupal sites.
+
+You may configure this VCL using a few keys:
+
+```yaml
+---
+flightdeck_varnish:
+  secret: "secretish"
+  hostPort: "6081"
+  controlPort: "6082"
+  memSize: "256m"
+  storageFile: "/var/lib/varnish/storage.bin"
+  storageSize: "1024m"
+  backendHost: "localhost"
+  backendPort: "80"
+  staticFileTtl: "1d"
+  defaultTtl: "1h"
+```
+
+* **backendHost** is the hostname of the backend for which Varnish is caching. Optional. Defaults to "localhost".
+* **backendPort** is the port of the backend for which Varnish is caching. Optional. Defaults to 80.
+* **staticFileTtl** is the time static files are cached by Varnish. Optional. Defaults to "1d".
+* **defaultTtl** is the default TTL for content when no `cache-control` header is set by the backend. Optional. Defaults to "1h".
+
+### Inline VCL
+
+If you want to customize the VCL, you can provide the entire content of the vcl using the `vcl` key:
 
 ```yaml
 ---
@@ -80,9 +115,9 @@ flightdeck_varnish:
   ...
 ```
 
-A default VCL is used by default, based on [Varnish's own example](https://www.varnish-software.com/developers/tutorials/configuring-varnish-drupal/#the-drupal-vcl-file).
+Note that when the `vcl` key is provided, all simple config is ignored.
 
-### Using an external file
+### Providing an external VCL file
 
 Sometimes you may wish to use an external file instead of an inline VCL. You can do this with `vclPath`:
 
@@ -102,6 +137,8 @@ Where:
 * **vclPath** is the path inside the container to the VCL file.
 
 This method is particularly useful on Kubernetes as it allows you to keep your VCL in a separate Configmap which may be easily edited. Furthermore, multiple files may be stored within the configmap as needed.
+
+When `vclPath` is in use, all simple config and the `vcl` key are ignored.
 
 ## Part of Flight Deck
 

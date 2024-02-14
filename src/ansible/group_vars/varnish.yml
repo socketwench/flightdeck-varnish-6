@@ -62,7 +62,10 @@ flightdeck_varnish_defaults:
   storageEnabled: false
   storageFile: "/var/lib/varnish/storage.bin"
   storageSize: "128m"
-  vcl: "{{ flightdeck_varnish_default_vcl }}"
+  backendHost: "{{ lookup('env', 'VARNISH_BACKEND_HOST') | default('localhost', true) }}"
+  backendPort: "{{ lookup('env', 'VARNISH_BACKEND_PORT') | default('80', true) }}"
+  staticFileTtl: "{{ lookup('env', 'VARNISH_STATIC_TTL') | default('1d', true) }}"
+  defaultTtl: "{{ lookup('env', 'VARNISH_DEFAULT_TTL') | default('1h', true) }}"
   
 flightdeck_varnish_default_vcl: |
   vcl 4.1;
@@ -70,8 +73,8 @@ flightdeck_varnish_default_vcl: |
   import std;
 
   backend default {
-      .host = "127.0.0.1";
-      .port = "80";
+      .host = "{{ flightdeck_varnish.backendHost | default(flightdeck_varnish_defaults.backendHost) }}";
+      .port = "{{ flightdeck_varnish.backendPort | default(flightdeck_varnish_defaults.backendPort) }}";
   }
 
   # Add hostnames, IP addresses and subnets that are allowed to purge content
@@ -208,20 +211,20 @@ flightdeck_varnish_default_vcl: |
       set beresp.http.x-url = bereq.url;
       set beresp.http.x-host = bereq.http.host;
 
-    # Serve stale content for 2 minutes after object expiration
-    # Perform asynchronous revalidation while stale content is served
+      # Serve stale content for 2 minutes after object expiration
+      # Perform asynchronous revalidation while stale content is served
       set beresp.grace = 120s;
 
       # If the file is marked as static we cache it for 1 day
       if (bereq.http.X-Static-File == "true") {
           unset beresp.http.Set-Cookie;
-          set beresp.ttl = 1d;
+          set beresp.ttl = {{ flightdeck_varnish.staticFileTtl | default(flightdeck_varnish_defaults.staticFileTtl) }};
       }
 
       # If we dont get a Cache-Control header from the backend
       # we default to 1h cache for all objects
       if (!beresp.http.Cache-Control) {
-          set beresp.ttl = 1h;
+          set beresp.ttl = {{ flightdeck_varnish.defaultTtl | default(flightdeck_varnish_defaults.defaultTtl) }};
       }
 
       # Parse Edge Side Include tags when the Surrogate-Control header contains ESI/1.0
