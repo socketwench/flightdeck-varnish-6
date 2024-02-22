@@ -66,6 +66,15 @@ flightdeck_varnish_defaults:
   backendPort: "{{ lookup('env', 'VARNISH_BACKEND_PORT') | default('80', true) }}"
   staticFileTtl: "{{ lookup('env', 'VARNISH_STATIC_TTL') | default('1d', true) }}"
   defaultTtl: "{{ lookup('env', 'VARNISH_DEFAULT_TTL') | default('1h', true) }}"
+  skipCache:
+    - "^/status.php$"
+    - "^/update.php$"
+    - "^/cron.php$"
+    - "^/admin$"
+    - "^/admin/.*$"
+    - "^/flag/.*$"
+    - "^.*/ajax/.*$"
+    - "^.*/ahah/.*$"
   
 flightdeck_varnish_default_vcl: |
   vcl 4.1;
@@ -172,19 +181,15 @@ flightdeck_varnish_default_vcl: |
           return(hash);
       }
 
-    # Don't cache the following pages
-      if (req.url ~ "^/status.php$" ||
-          req.url ~ "^/update.php$" ||
-          req.url ~ "^/cron.php$" ||
-          req.url ~ "^/admin$" ||
-          req.url ~ "^/admin/.*$" ||
-          req.url ~ "^/flag/.*$" ||
-          req.url ~ "^.*/ajax/.*$" ||
-          req.url ~ "^.*/ahah/.*$") {
+      # Don't cache the following pages
+
+      {% for _pattern in flightdeck_varnish.skipCache | default(flightdeck_varnish_defaults.skipCache) %}
+      if (req.url ~ "{{ _pattern }}") {
           return (pass);
       }
+      {% endfor %}
 
-    # Remove all cookies except the session & NO_CACHE cookies
+      # Remove all cookies except the session & NO_CACHE cookies
       if (req.http.Cookie) {
           set req.http.Cookie = ";" + req.http.Cookie;
           set req.http.Cookie = regsuball(req.http.Cookie, "; +", ";");

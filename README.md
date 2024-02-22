@@ -46,6 +46,15 @@ flightdeck_varnish:
   storageEnabled: false
   storageFile: "/var/lib/varnish/storage.bin"
   storageSize: "1024m"
+  skipCache:
+    - "^/status.php$"
+    - "^/update.php$"
+    - "^/cron.php$"
+    - "^/admin$"
+    - "^/admin/.*$"
+    - "^/flag/.*$"
+    - "^.*/ajax/.*$"
+    - "^.*/ahah/.*$"
 ```
 
 Where:
@@ -56,6 +65,7 @@ Where:
 * **storageEnabled** is if secondary storage to disk is enabled. Optional. Defaults to false.
 * **storageFile** is the full path in the container to the file to use for longer term varnish caching. Optional, defaults to `/var/lib/varnish/storage.bin`.
 * **storageSize** is the size of the storage file. Optional, defaults to `1024m`.
+* **skipCache** is a list of regexes to skip caching entirely. Optional, defaults to commonly skipped Drupal paths.
 
 ## Configuring Varnish
 
