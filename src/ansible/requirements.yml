@@ -1,6 +1,7 @@
 ---
 roles:
-  - src: ten7.flightdeck_base
+  - name: socketwench.flightdeck_base
+    src: https://github.com/socketwench/flightdeck_base
     version: 5.1.3
 collections:
   - name: community.general

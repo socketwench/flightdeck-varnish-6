@@ -1,9 +1,9 @@
 FROM alpine:3.14
-MAINTAINER tess@ten7.com
+LABEL "com.example.vendor"="deninet.com"
 
 # Update the package list and install Ansible.
 RUN apk -U upgrade &&\
-    apk add --update --no-cache ansible && \
+    apk add --update --no-cache ansible git && \
     rm -rf /tmp/* \
            /var/cache/apk/* \
            /usr/lib/python3.6/site-packages/ansible/modules/network/ \
@@ -17,7 +17,8 @@ COPY ansible /ansible
 
 # Run the build.
 RUN ansible-galaxy install -fr /ansible/requirements.yml && \
-    ansible-playbook -i /ansible/inventories/all.ini /ansible/build.yml
+    ansible-playbook -i /ansible/inventories/all.ini /ansible/build.yml && \
+    apk del git
 
 # Configure the runtime environment of the container.
 EXPOSE 6081 6082

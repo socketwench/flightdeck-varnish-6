@@ -14,9 +14,9 @@ flightdeck_user_prompt: '\u@flightdeck-varnish-6:\w$ '
 
 flightdeck_motd_links:
   - name: 'Code & docs'
-    url: 'https://github.com/ten7/flightdeck-varnish-6'
+    url: 'https://github.com/socketwench/flightdeck-varnish-6'
   - name: ' Learn more'
-    url: 'https://flightdeck.ten7.com/'
+    url: 'https://flightdeck.host/'
 
 flightdeck_init_commands: |
   if [ -f "/ansible/init.yml" ]; then

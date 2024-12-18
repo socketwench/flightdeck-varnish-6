@@ -1,7 +1,7 @@
 ---
 - hosts: varnish
   roles:
-    - ten7.flightdeck_base
+    - socketwench.flightdeck_base
   tasks:
     - name: Install Varnish
       apk:
